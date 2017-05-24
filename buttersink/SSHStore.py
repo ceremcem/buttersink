@@ -12,7 +12,7 @@ import io
 import json
 import logging
 import os.path
-import os.environ
+import os
 import platform
 import subprocess
 import sys
