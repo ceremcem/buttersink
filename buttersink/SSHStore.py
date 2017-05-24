@@ -12,6 +12,7 @@ import io
 import json
 import logging
 import os.path
+import os.environ
 import platform
 import subprocess
 import sys
@@ -326,8 +327,13 @@ class _Client(object):
         """ Open connection to remote host. """
         if self._process is not None:
             return
-
+        
+        orig_user = os.environ['SUDO_USER'] or 'root'
+		
         cmd = [
+			'sudo', 
+			'-u', 
+			orig_user,
             'ssh',
             self._host,
             'sudo',
