@@ -197,7 +197,7 @@ class SSHStore(Store.Store):
         """
         # For simplicity, only allow absolute paths
         # Don't lose a trailing slash -- it's significant
-        path = "/" + os.path.normpath(path) + ("/" if path.endswith("/") else "")
+        path = os.path.realpath("/" + path) + ("/" if path.endswith("/") else "")
 
         super(SSHStore, self).__init__(host, path, mode, dryrun)
 
@@ -329,7 +329,7 @@ class _Client(object):
             return
         
         orig_user = os.environ['SUDO_USER'] or 'root'
-		
+
         cmd = [
 			'sudo', 
 			'-u', 
@@ -343,7 +343,7 @@ class _Client(object):
             self._mode,
             self._directory
         ]
-        logger.debug("Connecting with: %s", cmd)
+        logger.debug("Connecting with: %s" % cmd)
         self._process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
