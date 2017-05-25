@@ -343,7 +343,7 @@ class _Client(object):
             self._mode,
             self._directory
         ]
-        logger.debug("Connecting with: %s" % cmd)
+        logger.debug("Connecting with: %s", cmd)
         self._process = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
