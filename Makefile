@@ -4,14 +4,16 @@
 # Copyright (c) 2014 Ames Cornish.  All rights reserved.  Licensed under GPLv3.
 
 .PHONY : all
-all : makestamps/apt makestamps/pip buttersink/version.py
+all : makestamps/apt makestamps/yum makestamps/pip buttersink/version.py
 
 makestamps/apt : apt.txt | makestamps
-	sudo apt-get install $$(cat $<)
-	touch $@
+	if [ -f "/etc/debian_version" ]; then sudo apt-get install -y $$(cat $<); touch $@ ; fi
+
+makestamps/yum : yum.txt | makestamps
+	if [ -f "/etc/redhat-release" ]; then sudo yum install -y $$(cat $<); touch $@ ; fi
 
 makestamps/pip : pip.txt | makestamps
-	umask 22 && sudo pip install $$(cat $<)
+	umask 22 && sudo -H pip install $$(cat $<)
 	touch $@
 
 makestamps :
@@ -52,7 +54,7 @@ buttersink/version.py : .git/index .git/refs/tags makestamps/source
 # To test:
 
 #   make test_full
-  
+
 # OPTS=--dry-run
 # OPTS=--verbose
 LOGFILE=make_test.log
@@ -70,11 +72,12 @@ TEST_DIR=/mnt/butter/bs-test
 # TEST_METHODS=ssh
 TEST_METHODS=s3 ssh
 
-TEST_REMOTE_ssh=ssh://bak@proliant.local/mnt/butter/bak/test
+TEST_REMOTE_HOST=proliant
+TEST_REMOTE_ssh=ssh://bak@${TEST_REMOTE_HOST}/bak/test
 define CLEAN_REMOTE_ssh
-	ssh root@proliant.local btrfs sub del -c '/mnt/butter/bak/test/*' || true
-	ssh root@proliant.local rm '/mnt/butter/bak/test/*' || true
-	ssh root@proliant.local mkdir -p '/mnt/butter/bak/test' || true
+	ssh root@${TEST_REMOTE_HOST} btrfs sub del -c '/bak/test/*' || true
+	ssh root@${TEST_REMOTE_HOST} rm '/bak/test/*' || true
+	ssh root@${TEST_REMOTE_HOST} mkdir -p '/bak/test' || true
 endef
 
 TEST_REMOTE_s3=s3://butter-test/regress

@@ -127,7 +127,7 @@ class Store(object):
         try:
             path = [p for p in paths if not p.startswith("/")][0]
         except IndexError:
-            path = os.path.basename(list(paths)[0])
+            path = os.path.relpath(list(paths)[0], self.userPath)
 
         return self._fullPath(path)
 
@@ -390,13 +390,14 @@ class Volume:
 
     """ Represents a snapshot. """
 
-    def __init__(self, uuid, gen, size=None, exclusiveSize=None):
+    def __init__(self, uuid, gen, size=None, exclusiveSize=None, otime=None):
         """ Initialize. """
         assert uuid is not None
         self._uuid = uuid  # Must never change!
         self.size = size
         self.exclusiveSize = exclusiveSize
         self.gen = gen
+        self.otime = otime
 
     def __cmp__(self, vol):
         """ Compare. """
@@ -446,7 +447,7 @@ class Volume:
                 (toUUID, fromUUID, size) = line.split()
                 try:
                     size = int(size)
-                except:
+                except Exception:
                     logger.warning("Bad size: %s", size)
                     continue
                 logger.debug("diff info: %s %s %d", toUUID, fromUUID, size)

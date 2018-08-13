@@ -69,6 +69,7 @@ class _Obj2Dict:
             gen=vol.gen,
             size=vol.size,
             exclusiveSize=vol.exclusiveSize,
+            otime=vol.otime,
         )
 
     def diff(self, diff):
@@ -234,10 +235,22 @@ class SSHStore(Store.Store):
 
     def getEdges(self, fromVol):
         """ Return the edges available from fromVol. """
-        return [
-            self.toObj.diff(diff)
-            for diff in self._client.getEdges(self.toArg.vol(fromVol))
-        ]
+
+        diffs = []
+        for diff_dict in self._client.getEdges(self.toArg.vol(fromVol)):
+            diffs.append(
+                Store.Diff(
+                    sink=self,
+                    toVol=self.toObj.vol(diff_dict["toVol"]),
+                    fromVol=(
+                        None
+                        if diff_dict["fromVol"] is None
+                        else self.toObj.vol(diff_dict["fromVol"])),
+                    size=diff_dict["size"],
+                    sizeIsEstimated=diff_dict["sizeIsEstimated"],
+            ))
+
+        return diffs
 
     def measureSize(self, diff, chunkSize):
         """ Spend some time to get an accurate size. """
@@ -318,7 +331,7 @@ class _Client(object):
     def __init__(self, host, mode, directory):
         self._host = host
         self._mode = mode
-        self._directory = urllib.quote_plus(directory, '/')
+        self._directory = directory
         self._process = None
         self.error = None
 
@@ -385,7 +398,7 @@ class _Client(object):
         # logger.debug('Result: %s', result)
         try:
             result = json.loads(result)
-        except:
+        except Exception:
             # result += os.read(self._process.stdout.fileno(), 5)
             # result += self._process.stdout.read()
             logger.error(result)
@@ -633,7 +646,15 @@ class StoreProxyServer(object):
     @command('edges', 'r')
     def getEdges(self, fromVol):
         """ Return the edges available from fromVol. """
-        return [self.toDict.diff(d) for d in self.butterStore.getEdges(self.toObj.vol(fromVol))]
+        diff_dict_list = [
+            dict(
+                size=d.size,
+                sizeIsEstimated=d.sizeIsEstimated,
+                toVol=self.toDict.vol(d.toVol),
+                fromVol=self.toDict.vol(d.fromVol),
+            ) for d in self.butterStore.getEdges(self.toObj.vol(fromVol))
+        ]
+        return diff_dict_list
 
     @command('measure', 'r')
     def measureSize(self, diffTo, diffFrom, estimatedSize, chunkSize, isInteractive):
